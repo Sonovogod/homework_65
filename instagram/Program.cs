@@ -1,8 +1,11 @@
+using System.IO.Compression;
+using instagram.Extension;
 using instagram.Models;
 using instagram.Services;
 using instagram.Services.Abstracts;
 using instagram.Services.File;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +23,18 @@ builder.Services.AddDbContext<InstagramContext>(options => options.UseNpgsql(con
         options.Password.RequireNonAlphanumeric = false;
     })
     .AddEntityFrameworkStores<InstagramContext>();
+
+builder.Services.AddControllersWithViews(options =>
+{
+    options.AddProfile();
+});
+builder.Services.AddResponseCaching();
+
+builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Optimal;
+});
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 builder.Services.AddScoped<IAccountService, AccountService>();
@@ -40,6 +55,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseResponseCaching();
+app.UseResponseCompression();
 
 app.UseRouting();
 

@@ -6,6 +6,7 @@ using instagram.Services.ViewModels.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace instagram.Controllers;
 
@@ -14,12 +15,14 @@ public class AccountController : Controller
     private readonly IAccountService _accountService;
     private readonly IFileService _fileService;
     private readonly SignInManager<User> _signInManager;
+    private readonly IMemoryCache _memoryCache;
 
-    public AccountController(IAccountService accountService, IFileService fileService, SignInManager<User> signInManager)
+    public AccountController(IAccountService accountService, IFileService fileService, SignInManager<User> signInManager, IMemoryCache memoryCache)
     {
         _accountService = accountService;
         _fileService = fileService;
         _signInManager = signInManager;
+        _memoryCache = memoryCache;
     }
 
     [HttpGet]
@@ -40,7 +43,14 @@ public class AccountController : Controller
             return RedirectToAction("Feed", "Posts");
         if (ModelState.IsValid)
         {
-            User? user = await _accountService.FindByEmailOrLoginAsync(model.EmailOrLogin);
+            User? user;
+
+            if (!_memoryCache.TryGetValue(model.EmailOrLogin, out user))
+            {
+                user = await _accountService.FindByEmailOrLoginAsync(model.EmailOrLogin);
+                _memoryCache.Set(model.EmailOrLogin, user);
+            }
+            
             if (user is not null)
             {
                 var signInResult = await _signInManager.PasswordSignInAsync(user, model.Password, true, false);
@@ -89,6 +99,7 @@ public class AccountController : Controller
                 {
                     User? user = await _accountService.FindByEmailOrLoginAsync(model.Email);
                     await _signInManager.SignInAsync(user, true);
+                    _memoryCache.Set(user.UserName, user);
                     return RedirectToAction("Profile", "Account", new {userName = user.UserName});
                 }
                 foreach (var error in result.Errors)
@@ -115,6 +126,7 @@ public class AccountController : Controller
     
     [HttpGet]
     [Authorize]
+    [ResponseCache(CacheProfileName = "Caching")]
     public async Task<IActionResult> Profile(string userName)
     {
         User? user = await _accountService.FindByEmailOrLoginAsync(userName);
