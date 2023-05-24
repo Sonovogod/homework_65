@@ -33,6 +33,7 @@ public class AccountController : Controller
     
     [HttpPost]
     [AllowAnonymous]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(UserLoginViewModel model)
     {
         if (User.Identity.IsAuthenticated)
@@ -64,12 +65,15 @@ public class AccountController : Controller
     [AllowAnonymous]
     public IActionResult Register()
     {
+        if (User.Identity.IsAuthenticated)
+            return RedirectToAction("Feed", "Posts");
         UserRegisterViewModel model = new UserRegisterViewModel();
         return View(model);
     }
 
     [HttpPost]
     [AllowAnonymous]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(UserRegisterViewModel model, IFormFile uploadedFile)
     {
         if (ModelState.IsValid)
