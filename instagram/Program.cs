@@ -24,12 +24,6 @@ builder.Services.AddDbContext<InstagramContext>(options => options.UseNpgsql(con
     })
     .AddEntityFrameworkStores<InstagramContext>();
 
-builder.Services.AddControllersWithViews(options =>
-{
-    options.AddProfile();
-});
-builder.Services.AddResponseCaching();
-
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 {
@@ -55,7 +49,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseResponseCaching();
 app.UseResponseCompression();
 
 app.UseRouting();

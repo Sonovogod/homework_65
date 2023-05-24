@@ -126,7 +126,6 @@ public class AccountController : Controller
     
     [HttpGet]
     [Authorize]
-    [ResponseCache(CacheProfileName = "Caching")]
     public async Task<IActionResult> Profile(string userName)
     {
         User? user = await _accountService.FindByEmailOrLoginAsync(userName);
